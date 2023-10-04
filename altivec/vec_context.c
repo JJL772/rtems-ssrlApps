@@ -17,6 +17,7 @@
 #include <rtems/bspIo.h>
 #include <rtems/powerpc/registers.h>
 #include <stdint.h>
+#include <rtems/score/percpu.h>
 
 /* Just implement traditional entry points for sake
  * of binary bwds-compatibility...

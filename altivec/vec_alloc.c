@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <rtems/score/percpu.h>
+#include <rtems/score/sysstate.h>
 
 /* Check for RTEMS version >= major/minor/revision */
 #define ISMINVERSION(ma,mi,re) \

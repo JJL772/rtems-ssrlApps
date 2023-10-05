@@ -13,9 +13,6 @@ AM_MAINTAINER_MODE
 
 AH_TEMPLATE([NFS_SUPPORT])
 
-# Check for critical programs we need for building
-TILLAC_RTEMS_CHECK_TOOLS
-
 # Must add this BEFORE TILLAC_RTEMS_SETUP
 # so that the dummy-top 'config.status' also
 # knows how to make a config.h
@@ -31,12 +28,15 @@ fi
 TILLAC_RTEMS_LDFLAGS="-L`pwd`/"'$RTEMS_BSP/data/lib'
 TILLAC_RTEMS_CPPFLAGS="-I`pwd`/"'$RTEMS_BSP/data/include'
 
-TILLAC_RTEMS_SETUP
-
 AC_SUBST([enable_subdirs])
 AC_SUBST([all_subdirs])
 AC_SUBST([rtems_cpu],[$host_cpu])
 AC_SUBST([rtems_bsp],[$enable_rtemsbsp])
+
+# Check for critical programs we need for building
+TILLAC_RTEMS_CHECK_TOOLS
+
+TILLAC_RTEMS_SETUP
 
 dnl This doesn't work -- somehow automake gets confused
 dnl (perhaps because we have both, a Makefile and a makefile):

@@ -369,9 +369,9 @@ AC_MSG_CHECKING([whether we should build unbundled NFS])
 # Note the 5th argument; linking would fail because
 # the application usually supplies rtems_bsdnet_config.
 # In order to link, we create a dummy symbol.
-AC_CHECK_LIB([nfs],[nfsInit],
+AC_CHECK_LIB([bsd],[rtems_nfs_initialize],
 	[AC_MSG_NOTICE([Using RTEMS bundled NFS])
-	 AC_SUBST([NFSLIB],["-lnfs"])
+	 AC_SUBST([NFSLIB],["-lbsd"])
      nfs_enableval=2
 	 if test -d $srcdir/rtemsNfs ; then
 	 	AC_MSG_NOTICE([Building 'dirutils' only (from unbundled NFS)])

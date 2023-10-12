@@ -12,6 +12,7 @@ AM_INIT_AUTOMAKE([foreign 1.10])
 AM_MAINTAINER_MODE
 
 AH_TEMPLATE([NFS_SUPPORT])
+AH_TEMPLATE([HAVE_LIBBSD])
 
 # Must add this BEFORE TILLAC_RTEMS_SETUP
 # so that the dummy-top 'config.status' also
@@ -313,7 +314,7 @@ TILLAC_M4_IF_PRESENT([amdeth],
 		enable_subdirs="${enable_subdirs} amdeth"
 		have_amddrv=yes
 	else
-		AC_MSG_NOTICE([Your BSP doesn't seem to have PCI; not building the amdeth driver])
+		AC_MSG_NOTICE([Your BSP doesnt seem to have PCI; not building the amdeth driver])
 	fi
 fi]dnl
 )
@@ -371,8 +372,9 @@ AC_MSG_CHECKING([whether we should build unbundled NFS])
 # In order to link, we create a dummy symbol.
 AC_CHECK_LIB([bsd],[rtems_nfs_initialize],
 	[AC_MSG_NOTICE([Using RTEMS bundled NFS])
-	 AC_SUBST([NFSLIB],["-lbsd"])
+	 AC_SUBST([NFSLIB],["-Wl,--start-group -lbsd -lrtemsbsp -lrtemscpu -Wl,--end-group"])
      nfs_enableval=2
+	 have_libbsd=1
 	 if test -d $srcdir/rtemsNfs ; then
 	 	AC_MSG_NOTICE([Building 'dirutils' only (from unbundled NFS)])
 		build_rtems_nfs=dirutils_only
@@ -386,6 +388,7 @@ AC_CHECK_LIB([bsd],[rtems_nfs_initialize],
 	TILLAC_RTEMS_CHECK_LIB_ARGS
 )
 AC_DEFINE_UNQUOTED([NFS_SUPPORT],[$nfs_enableval],[Whether to use NFS (2: bundled; 1 unbundled)])
+AC_DEFINE([HAVE_LIBBSD],[$have-libbsd], [Whether we are building with the new RTEMS libbsd])
 
 AC_MSG_RESULT([Building unbundled NFS: $build_rtems_nfs])
 
@@ -460,5 +463,5 @@ AM_CONDITIONAL([BUILD_RTEMS_NFS],       [test "$build_rtems_nfs"       = "yes"])
 AM_CONDITIONAL([HAVE_BUNDLED_TELNETD],  [test "$have_bundled_telnetd"  = "yes"])
 AM_CONDITIONAL([NETBOOT_COMPRESSED],    [test "$netboot_compressed"    = "yes"])
 AM_CONDITIONAL([ENABLE_DIAG_HOSTPROGS], [test "$enable_diag_hostprogs" = "yes"])
-
+AM_CONDITIONAL([HAVE_LIBBSD],			[test "$have_libbsd"           = 1])
 AC_OUTPUT

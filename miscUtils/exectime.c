@@ -5,6 +5,7 @@
  */
 #include <rtems.h>
 #include <time.h>
+#include <sys/time.h>
 
 uint32_t
 execUsN(int rep, void (*fn)(),uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6)

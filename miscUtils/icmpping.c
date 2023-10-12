@@ -17,7 +17,6 @@
 #include "compat.h"
 #else
 #include <rtems.h>
-#include <rtems/timerdrv.h>
 #endif
 
 #include <stdint.h>
@@ -170,9 +169,7 @@ extern unsigned long long Read_long_timer();
 static inline unsigned long
 ticks_per_s_fn(void)
 {
-rtems_interval x;
-	rtems_clock_get(RTEMS_CLOCK_GET_TICKS_PER_SECOND, &x);
-	return (unsigned long)x;
+	return (unsigned long)rtems_clock_get_ticks_per_second();
 }
 
 static inline unsigned long
@@ -223,7 +220,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
   send_time = Read_timer();
 #else
   /* Get time for ping. */
-  (void) rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, &send_time);
+  send_time = rtems_clock_get_ticks_since_boot();
 #endif
 
   rcv_time = send_time; /* For first timeout calculation */
@@ -281,7 +278,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
 #ifdef USE_TIMER
 	rcv_time = Read_timer();
 #else
-    (void) rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, &rcv_time);
+	rcv_time = rtems_clock_get_ticks_since_boot();
 #endif
 
     /* Check if packet is response to our ping */

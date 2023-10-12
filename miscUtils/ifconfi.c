@@ -6,7 +6,6 @@
 
 #include <rtems.h>
 #include <rtems/rtems_bsdnet.h>
-#include <rtems/rtems_bsdnet_internal.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -26,12 +25,6 @@ typedef union {
 	struct sockaddr    soa;
 	struct sockaddr_in sin;
 } sockaddr_alias_u;
-
-/* #ifdef ed for unknown reasons in the headers :-( */
-extern in_addr_t inet_lnaof(struct in_addr in);
-extern int inet_aton(const char *cp, struct in_addr *inp);
-extern struct in_addr inet_makeaddr(int net, int host);
-extern in_addr_t inet_netof(struct in_addr in);
 
 /* configure interface 'name' to use IP address 'addr' and netmask 'msk'
  * (both strings in IP 'dot' notation). Bring IF up.
@@ -149,9 +142,7 @@ struct rtems_bsdnet_ifconfig cfg;
 
 	cfg.drv_ctrl         = 0;
 
-	rtems_bsdnet_semaphore_obtain();
 	rval = cfg.attach(&cfg, 1);
-	rtems_bsdnet_semaphore_release();
 
 	return rval;
 }

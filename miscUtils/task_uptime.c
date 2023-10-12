@@ -3,8 +3,9 @@
 #include <config.h>
 #endif
 
-#include <rtems/system.h>
 #include <rtems/rtems/tasks.h>
+#include <rtems/score/threadimpl.h>
+#include <rtems/score/timestampimpl.h>
 
 #if defined(RTEMS_VERSION_ATLEAST) && RTEMS_VERSION_ATLEAST(4,8,99)
 #define HAVE_HIGHRES_TIME
@@ -23,15 +24,12 @@ miscu_get_idle_uptime(struct timespec *pts)
 {
 #if defined(HAVE_HIGHRES_TIME)
 rtems_status_code sc = RTEMS_SUCCESSFUL;
-int               key;
 
-	rtems_interrupt_disable(key);
-		if ( ! _Thread_Idle ) {
-			sc   = RTEMS_NOT_DEFINED;
-		} else {
-			*pts = _Thread_Idle->cpu_time_used;
-		}
-	rtems_interrupt_enable(key);
+	if ( ! _Thread_Executing ) {
+		sc   = RTEMS_NOT_DEFINED;
+	} else {
+		_Timestamp_To_timespec(&_Thread_Executing->cpu_time_used, pts);
+	}
 
 	return sc;
 #else
@@ -44,26 +42,13 @@ miscu_get_task_uptime(rtems_id tid, struct timespec *pts)
 {
 #if defined(HAVE_HIGHRES_TIME)
 Thread_Control    *tcb;
-Objects_Locations loc;
+ISR_lock_Context lctx;
 
-	tcb = _Thread_Get (tid, &loc);
+	tcb = _Thread_Get (tid, &lctx);
 
-	switch ( loc ) {
-		case OBJECTS_LOCAL:
-			*pts = tcb->cpu_time_used;
-			_Thread_Enable_dispatch();
+	if (_Objects_Is_local_id(tid)) {
+		_Timestamp_To_timespec(&tcb->cpu_time_used, pts);
 		return RTEMS_SUCCESSFUL;
-
-#if defined(RTEMS_MULTIPROCESSING)
-		case OBJECTS_REMOTE:
-			_Thread_Dispatch();
-		/* not implemented for remote tasks */
-		return RTEMS_ILLEGAL_ON_REMOTE_OBJECT;
-#endif
-		
-		case OBJECTS_ERROR:
-		default:
-		break;
 	}
 	return RTEMS_INVALID_ID;
 #else

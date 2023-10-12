@@ -1,6 +1,5 @@
 #ifdef __rtems__
 #include <rtems.h>
-#include <rtems/rtems_bsdnet_internal.h>
 #include <rtems/libio_.h>
 #else
 #define rtems_libio_number_iops 2000
@@ -10,6 +9,12 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/socketvar.h>
+
+/* disabled on RTEMS 5+ for now */
+#if defined(__RTEMS_MAJOR__) && __RTEMS_MAJOR__ < 5
+#define ENABLE_RTEMS_SOCKSTATS
+#endif
 
 #ifdef __rtems__
 #include <sys/socketvar.h>
@@ -21,7 +26,7 @@
 #include <sys/mbuf.h>
 #endif
 
-#if ! defined(__rtems__) 
+#if ! defined(ENABLE_RTEMS_SOCKSTATS)
 
 #define LOCK()   do {} while (0)
 #define UNLOCK() do {} while (0)
@@ -260,7 +265,7 @@ struct sockaddr_in sin;
 } ss,sp;
 socklen_t       l;
 char            buf[100];
-#ifdef __rtems__
+#ifdef ENABLE_RTEMS_SOCKSTATS
 /* grab a copy of some socket statistics */
 struct sostats  sostats;
 struct socket   *so      = 0;
@@ -270,7 +275,7 @@ rtems_libio_t   *iop     = 0;
 	if ( ! f )
 		f = stdout;
 
-#ifdef __rtems__
+#ifdef ENABLE_RTEMS_SOCKSTATS
 	init_sockhdlrs();
 #endif
 
@@ -311,7 +316,7 @@ rtems_libio_t   *iop     = 0;
 			l = sizeof(sp);
 			e = getpeername(i, &sp.sa, &l);
 
-#ifdef __rtems__
+#ifdef ENABLE_RTEMS_SOCKSTATS
 			/* Gather some statistics from the socket */
 			if ( level && (iop = rtems_libio_iop(i)) ) {
 				if ( (so = (struct socket*)iop->data1) ) {
@@ -346,7 +351,7 @@ rtems_libio_t   *iop     = 0;
 				fprintf(f, "%16s:%5u\n", buf, ntohs(sp.sin.sin_port));
 			}
 
-#ifdef __rtems__
+#ifdef ENABLE_RTEMS_SOCKSTATS
 			if ( level ) {
 				/* print more information */
 				if ( !iop ) {

@@ -1,7 +1,9 @@
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
-//#include <rtems/score/cpu.h>
-//#include <rtems/score/thread.h>
+#include <rtems/score/cpu.h>
+#include <rtems/score/thread.h>
+#include <rtems/score/threadimpl.h>
+#include <rtems/score/percpu.h>
 #include <stdio.h>
 
 #ifdef HAVE_CONFIG_H
@@ -23,45 +25,50 @@
 
 #define GETREG(var, nr)	__asm__ __volatile__("mr %0, %1":"=r"(var##nr):"i"(nr))
 
-#ifdef PPC
+#ifdef __PPC__
 int
 taskStack(rtems_id id)
 {
-Objects_Locations	loc;
 Thread_Control		*tcb;
 void				*stackbuf[30];
 int					i;
-Context_Control		regs;
+Context_Control		ctrl;
+ppc_context			regs;
+ISR_lock_Context	lctx;
+rtems_interrupt_level isrl;
+int isr_disabled = 0;
 
 	/* silence compiler warning about unused regs */
-	memset(&regs,0,sizeof(regs));
+	memset(&ctrl,0,sizeof(ctrl));
 
-	tcb = _Thread_Get(id, &loc);
-	if (OBJECTS_LOCAL!=loc || !tcb) {
-		if (tcb)
-			_Thread_Enable_dispatch();
+	tcb = _Thread_Get(id, &lctx);
+	if (!_Objects_Is_local_id(id) || !tcb) {
+		if (tcb) {
+			rtems_interrupt_disable(isrl);
+			isr_disabled = 1;
+		}
 		fprintf(stderr,"Id %x not found on local node\n",(unsigned)id);
 		return -1;
 	}
 	stackbuf[0]=0;
 	if (_Thread_Executing==tcb)
 		tcb=0;
+	ppc_context* ctx = ppc_get_context(&tcb->Registers);
 	CPU_stack_take_snapshot(
 					stackbuf,
 					NumberOf(stackbuf),
 					(void*)0,
-					(void*)(tcb ? tcb->Registers.pc : 0),
-					(void*)(tcb ? tcb->Registers.gpr1 : 0));
+					0,/*(void*)(ctx ? ctx->pc : 0), TODO!!! */
+					(void*)(ctx ? ctx->gpr1 : 0));
 	if (tcb) {
-		regs = tcb->Registers;
+		memcpy(&regs, ppc_get_context(&tcb->Registers), sizeof(regs));
 	}
 
-	_Thread_Enable_dispatch();
+	if (isr_disabled)
+		rtems_interrupt_enable(isrl);
 
 	if (!tcb) {
 		GETREG(regs.gpr,1);
-		GETREG(regs.gpr,2);
-		GETREG(regs.gpr,13);
 		GETREG(regs.gpr,14);
 		GETREG(regs.gpr,15);
 		GETREG(regs.gpr,16);
@@ -86,8 +93,8 @@ Context_Control		regs;
 	printf("\nRegisters:\n");
 	printf("GPR1:  0x%08x\n",
 			(unsigned)regs.gpr1);
-	printf("GPR2:  0x%08x, GPR13: 0x%08x, GPR14: 0x%08x, GPR15: 0x%08x\n",
-			(unsigned)regs.gpr2,  (unsigned)regs.gpr13, (unsigned)regs.gpr14, (unsigned)regs.gpr15);
+	printf("GPR14: 0x%08x, GPR15: 0x%08x\n",
+			(unsigned)regs.gpr14, (unsigned)regs.gpr15);
 	printf("GPR16: 0x%08x, GPR17: 0x%08x, GPR18: 0x%08x, GPR19: 0x%08x\n",
 			(unsigned)regs.gpr16, (unsigned)regs.gpr17, (unsigned)regs.gpr18, (unsigned)regs.gpr19);
 	printf("GPR20: 0x%08x, GPR21: 0x%08x, GPR22: 0x%08x, GPR23: 0x%08x\n",
